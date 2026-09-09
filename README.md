@@ -12,7 +12,7 @@ This project will take a CDDL schema and generate [Zod](https://zod.dev) schemas
 
 ## Why this exists
 
-This project exists to serve [wire-mesh](https://github.com/ExaDev/wire-mesh)'s own need for a TypeScript implementation of a CDDL-described wire protocol, but it is scoped and named to stand on its own. CDDL-to-TypeScript code generation appears to be genuinely unaddressed territory today, not a crowded space with an obvious existing choice.
+This project exists to serve [wire-mesh](https://github.com/ExaDev/wire-mesh)'s own need for a TypeScript implementation of a CDDL-described wire protocol — specifically, generating the schemas `ts/packages/core` in that repository is built against, from `spec/protocol.cddl` — but it is scoped and named to stand on its own. CDDL-to-TypeScript code generation appears to be genuinely unaddressed territory today, not a crowded space with an obvious existing choice.
 
 ## Planned approach
 
