@@ -169,9 +169,13 @@ function emitOperatorValue(
   );
 }
 
+/** Rule names a rule's own emitted expression references via `z.lazy(() => xSchema)` -- collected as emission walks the AST so emitModule can tell which rules are genuinely part of a reference cycle afterwards (see computeCyclicRules). */
+type RefSet = Set<string>;
+
 function emitWithOperator(
   node: Record<string, unknown>,
   ruleName: string,
+  refs: RefSet,
 ): string {
   const baseType = node.Type;
   const operator = requireObjectField(node, "Operator", ruleName);
@@ -185,6 +189,7 @@ function emitWithOperator(
     baseType.Type === "group" &&
     typeof baseType.Value === "string"
   ) {
+    refs.add(baseType.Value);
     baseExpr = `z.lazy(() => ${schemaVarName(baseType.Value)})`;
   } else {
     throw new Error(
@@ -223,6 +228,7 @@ function emitWithOperator(
         `rule "${ruleName}" uses .cbor/.cborseq with a value that isn't a plain rule reference, outside cddl.js's supported subset`,
       );
     }
+    refs.add(opValue.Value);
     const innerVar = schemaVarName(opValue.Value);
     return `cborDecodesAs(z.lazy(() => ${innerVar}))`;
   }
@@ -285,6 +291,7 @@ function emitSingleType(
   node: unknown,
   ruleName: string,
   literalKeys: LiteralKeyMap,
+  refs: RefSet,
 ): string {
   if (typeof node === "string") {
     return emitNativeType(node, ruleName);
@@ -295,20 +302,21 @@ function emitSingleType(
     );
   }
   if ("Operator" in node) {
-    return emitWithOperator(node, ruleName);
+    return emitWithOperator(node, ruleName, refs);
   }
   if (node.Type === "literal") {
     return `z.literal(${JSON.stringify(node.Value)})`;
   }
   if (node.Type === "group" && typeof node.Value === "string") {
+    refs.add(node.Value);
     return `z.lazy(() => ${schemaVarName(node.Value)})`;
   }
   if (node.Type === "group" && "Properties" in node) {
     // An inline anonymous map used as a property's own value type, e.g. `env: {* tstr => tstr}` -- distinct from the rule-reference shape above, which carries a `Value` name instead of its own `Properties`.
-    return emitGroupExpr(node, ruleName, literalKeys);
+    return emitGroupExpr(node, ruleName, literalKeys, refs);
   }
   if (node.Type === "array") {
-    return emitArrayExpr(node, ruleName, literalKeys);
+    return emitArrayExpr(node, ruleName, literalKeys, refs);
   }
   throw new Error(
     `rule "${ruleName}" has a property type shape outside cddl.js's supported subset: ${JSON.stringify(node)}`,
@@ -320,23 +328,25 @@ function emitPropertyType(
   types: unknown,
   ruleName: string,
   literalKeys: LiteralKeyMap,
+  refs: RefSet,
 ): string {
   if (!isUnknownArray(types)) {
-    return emitSingleType(types, ruleName, literalKeys);
+    return emitSingleType(types, ruleName, literalKeys, refs);
   }
   if (types.length === 0) {
     throw new Error(`rule "${ruleName}" has an empty property type`);
   }
   if (types.length === 1) {
-    return emitSingleType(types[0], ruleName, literalKeys);
+    return emitSingleType(types[0], ruleName, literalKeys, refs);
   }
-  return `z.union([${types.map((t) => emitSingleType(t, ruleName, literalKeys)).join(", ")}])`;
+  return `z.union([${types.map((t) => emitSingleType(t, ruleName, literalKeys, refs)).join(", ")}])`;
 }
 
 function emitGroupProperties(
   properties: unknown,
   ruleName: string,
   literalKeys: LiteralKeyMap,
+  refs: RefSet,
 ): { fields: string[]; catchall: string | undefined } {
   if (!isUnknownArray(properties)) {
     throw new Error(`rule "${ruleName}" has malformed Properties`);
@@ -356,7 +366,12 @@ function emitGroupProperties(
       // Arrow syntax (`keytype => valuetype`): either a specific literal-valued key (`? cose-header-alg => int`) or the generic open-map-tail (`* tstr => any`).
       const literalKey = literalKeys.get(keyName);
       if (literalKey !== undefined) {
-        const inner = emitPropertyType(rawProp.Type, ruleName, literalKeys);
+        const inner = emitPropertyType(
+          rawProp.Type,
+          ruleName,
+          literalKeys,
+          refs,
+        );
         const { expr, optional } = emitOccurrence(occurrence, inner, ruleName);
         fields.push(
           `  ${JSON.stringify(String(literalKey))}: ${optional ? `${expr}.optional()` : expr},`,
@@ -373,7 +388,7 @@ function emitGroupProperties(
             `rule "${ruleName}" has more than one open-map-tail (* key => value) entry, outside cddl.js's supported subset (one per map)`,
           );
         }
-        catchall = emitPropertyType(rawProp.Type, ruleName, literalKeys);
+        catchall = emitPropertyType(rawProp.Type, ruleName, literalKeys, refs);
         continue;
       }
       throw new Error(
@@ -381,7 +396,7 @@ function emitGroupProperties(
       );
     }
 
-    const inner = emitPropertyType(rawProp.Type, ruleName, literalKeys);
+    const inner = emitPropertyType(rawProp.Type, ruleName, literalKeys, refs);
     const { expr, optional } = emitOccurrence(occurrence, inner, ruleName);
     fields.push(
       `  ${JSON.stringify(keyName)}: ${optional ? `${expr}.optional()` : expr},`,
@@ -395,11 +410,13 @@ function emitGroupExpr(
   entry: Record<string, unknown>,
   ruleName: string,
   literalKeys: LiteralKeyMap,
+  refs: RefSet,
 ): string {
   const { fields, catchall } = emitGroupProperties(
     entry.Properties,
     ruleName,
     literalKeys,
+    refs,
   );
   const object = `z.object({\n${fields.join("\n")}\n})`;
   return catchall !== undefined ? `${object}.catchall(${catchall})` : object;
@@ -409,6 +426,7 @@ function emitArrayExpr(
   entry: Record<string, unknown>,
   ruleName: string,
   literalKeys: LiteralKeyMap,
+  refs: RefSet,
 ): string {
   const values = entry.Values;
   if (!isUnknownArray(values) || values.length === 0) {
@@ -426,7 +444,7 @@ function emitArrayExpr(
         occurrence.n === 0 &&
         occurrence.m === Infinity
       ) {
-        const inner = emitPropertyType(only.Type, ruleName, literalKeys);
+        const inner = emitPropertyType(only.Type, ruleName, literalKeys, refs);
         return `z.array(${inner})`;
       }
     }
@@ -443,7 +461,7 @@ function emitArrayExpr(
         `rule "${ruleName}" mixes occurrence indicators within a fixed array, outside cddl.js's supported subset`,
       );
     }
-    return emitPropertyType(value.Type, ruleName, literalKeys);
+    return emitPropertyType(value.Type, ruleName, literalKeys, refs);
   });
   return `z.tuple([${elements.join(", ")}])`;
 }
@@ -453,30 +471,65 @@ function emitEntryExpr(
   entry: Record<string, unknown>,
   ruleName: string,
   literalKeys: LiteralKeyMap,
+  refs: RefSet,
 ): string {
   const kind = entry.Type;
   if (kind === "group") {
-    return emitGroupExpr(entry, ruleName, literalKeys);
+    return emitGroupExpr(entry, ruleName, literalKeys, refs);
   }
   if (kind === "array") {
-    return emitArrayExpr(entry, ruleName, literalKeys);
+    return emitArrayExpr(entry, ruleName, literalKeys, refs);
   }
   if (kind === "variable") {
-    return emitPropertyType(entry.PropertyType, ruleName, literalKeys);
+    return emitPropertyType(entry.PropertyType, ruleName, literalKeys, refs);
   }
   throw new Error(
     `rule "${ruleName}" has an unsupported top-level rule kind "${String(kind)}"`,
   );
 }
 
+interface RuleExpr {
+  expr: string;
+  refs: RefSet;
+}
+
 /** A rule with exactly one entry emits that entry's own expression directly; a socket with several entries (its base definition plus every `/=` choice-addition) unions every entry's own expression together. */
-function emitRule(rule: MergedRule, literalKeys: LiteralKeyMap): string {
+function computeRuleExpr(
+  rule: MergedRule,
+  literalKeys: LiteralKeyMap,
+): RuleExpr {
+  const refs: RefSet = new Set();
   const exprs = rule.raw.map((entry) =>
-    emitEntryExpr(entry, rule.name, literalKeys),
+    emitEntryExpr(entry, rule.name, literalKeys, refs),
   );
   const expr =
     rule.raw.length === 1 ? exprs.join("") : `z.union([${exprs.join(", ")}])`;
-  return `export const ${schemaVarName(rule.name)}: z.ZodType = z.lazy(() => ${expr});`;
+  return { expr, refs };
+}
+
+/** A rule is "cyclic" if, following z.lazy() references transitively, it can reach itself -- e.g. `frame`'s own union includes `federation-envelope-frame`, whose `inner` field is `.cbor frame`, a reference straight back to `frame`. Only these rules need an explicit `z.ZodType` type annotation to break TypeScript's circular-inference restriction; every other rule can have its schema's concrete shape inferred naturally, which is the entire point of generating Zod schemas with attached inferred types rather than hand-written ones. */
+function computeCyclicRules(
+  perRule: ReadonlyMap<string, RuleExpr>,
+): Set<string> {
+  const cyclic = new Set<string>();
+  for (const [name, ruleExpr] of perRule) {
+    const visited = new Set<string>();
+    const stack = [...ruleExpr.refs];
+    while (stack.length > 0) {
+      const next = stack.pop();
+      if (next === undefined || visited.has(next)) continue;
+      visited.add(next);
+      if (next === name) {
+        cyclic.add(name);
+        break;
+      }
+      const nextRefs = perRule.get(next)?.refs;
+      if (nextRefs) {
+        stack.push(...nextRefs);
+      }
+    }
+  }
+  return cyclic;
 }
 
 /** Compiles a parsed CDDL AST into a single TypeScript module source: one Zod schema plus one inferred type export per named rule. */
@@ -484,12 +537,28 @@ export function emitModule(parsed: unknown): string {
   const rules = mergeRules(parsed);
   const literalKeys = buildLiteralKeyMap(rules);
 
+  const perRule = new Map<string, RuleExpr>();
+  for (const rule of rules) {
+    perRule.set(rule.name, computeRuleExpr(rule, literalKeys));
+  }
+  const cyclicRules = computeCyclicRules(perRule);
+
   const schemaLines: string[] = [];
   const typeLines: string[] = [];
   const needsCbor = JSON.stringify(parsed).includes('"cbor"');
 
   for (const rule of rules) {
-    schemaLines.push(emitRule(rule, literalKeys));
+    const ruleExpr = perRule.get(rule.name);
+    if (!ruleExpr) {
+      throw new Error(
+        `internal error: no expression computed for rule "${rule.name}"`,
+      );
+    }
+    // A cyclic rule keeps the generic z.ZodType annotation, since TypeScript can't infer a concrete type through a genuine reference cycle; every other rule infers its own concrete shape from the expression itself, which is what makes the generated `export type X = z.infer<typeof xSchema>` lines actually carry the schema's real shape instead of collapsing to `unknown`.
+    const annotation = cyclicRules.has(rule.name) ? ": z.ZodType" : "";
+    schemaLines.push(
+      `export const ${schemaVarName(rule.name)}${annotation} = z.lazy(() => ${ruleExpr.expr});`,
+    );
     typeLines.push(
       `export type ${typeName(rule.name)} = z.infer<typeof ${schemaVarName(rule.name)}>;`,
     );
