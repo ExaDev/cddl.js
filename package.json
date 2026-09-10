@@ -44,6 +44,10 @@
       "import": "./dist/emitter.mjs",
       "require": "./dist/emitter.cjs"
     },
+    "./parse": {
+      "import": "./dist/parse.mjs",
+      "require": "./dist/parse.cjs"
+    },
     "./runtime": {
       "import": "./dist/runtime.mjs",
       "require": "./dist/runtime.cjs"
