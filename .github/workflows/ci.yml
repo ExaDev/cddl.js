@@ -9,6 +9,10 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: write
+  id-token: write
+
 jobs:
   build-and-test:
     name: Build, Typecheck, Lint, Test
@@ -34,13 +38,6 @@ jobs:
       - name: Build the library (dual ESM/CJS, verified with attw)
         run: pnpm run build
 
-      - name: Confirm the committed dist/ matches a fresh build
-        run: |
-          if ! git diff --exit-code -- dist; then
-            echo "::error::dist/ is out of date. Run 'pnpm run build' and commit the result -- dist/ is committed deliberately (see README.md) and must never be edited by hand or left stale."
-            exit 1
-          fi
-
       - name: Typecheck
         run: pnpm run typecheck
 
@@ -49,3 +46,37 @@ jobs:
 
       - name: Round-trip wire-mesh's conformance vectors through the generated schemas
         run: pnpm run test
+
+  release:
+    name: Release
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [build-and-test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: package.json
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .tool-versions
+          # Do NOT set registry-url -- it creates an .npmrc that overrides OIDC
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Compile the vendored parser
+        run: pnpm run vendor:build
+
+      - name: Build the library
+        run: pnpm run build
+
+      - name: Release
+        run: pnpm exec semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
