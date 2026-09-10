@@ -1,0 +1,59 @@
+diff --git a/packages/cddl/src/ast.ts b/packages/cddl/src/ast.ts
+index 7794b03..6fca0ed 100644
+--- a/packages/cddl/src/ast.ts
++++ b/packages/cddl/src/ast.ts
+@@ -156,7 +156,7 @@ export type Range = {
+     Inclusive: boolean
+ }
+ 
+-export type OperatorType = 'default' | 'size' | 'regexp' | 'bits' | 'and' | 'within' | 'eq' | 'ne' | 'lt' | 'le' | 'gt' | 'ge'
++export type OperatorType = 'default' | 'size' | 'regexp' | 'bits' | 'and' | 'within' | 'eq' | 'ne' | 'lt' | 'le' | 'gt' | 'ge' | 'cbor' | 'cborseq'
+ export interface Operator {
+     Type: OperatorType
+     Value: PropertyType
+diff --git a/packages/cddl/src/parser.ts b/packages/cddl/src/parser.ts
+index 5c273ed..0b64abe 100644
+--- a/packages/cddl/src/parser.ts
++++ b/packages/cddl/src/parser.ts
+@@ -13,7 +13,7 @@ import {
+ 
+ const NIL_TOKEN: Token = { Type: Tokens.ILLEGAL, Literal: '' }
+ const DEFAULT_OCCURRENCE: Occurrence = { n: 1, m: 1 } // exactly one time
+-const OPERATORS: OperatorType[] = ['default', 'size', 'regexp', 'bits', 'and', 'within', 'eq', 'ne', 'lt', 'le', 'gt', 'ge']
++const OPERATORS: OperatorType[] = ['default', 'size', 'regexp', 'bits', 'and', 'within', 'eq', 'ne', 'lt', 'le', 'gt', 'ge', 'cbor', 'cborseq']
+ const OPERATORS_EXPECTING_VALUES: Record<OperatorType, PropertyReferenceType[] | undefined> = {
+     default: undefined,
+     size: ['literal', 'range'],
+@@ -27,6 +27,8 @@ const OPERATORS_EXPECTING_VALUES: Record<OperatorType, PropertyReferenceType[] |
+     le: ['group'],
+     gt: ['group'],
+     ge: ['group'],
++    cbor: ['group'],
++    cborseq: ['group'],
+ }
+ 
+ export default class Parser {
+@@ -195,12 +197,13 @@ export default class Parser {
+ 
+             this.nextToken() // eat closing token
+             if (groupName) {
++                const operator = this.isOperator() ? this.parseOperator() : undefined
+                 const variable: Variable = {
+                     Type: 'variable',
+                     Name: groupName,
+                     IsChoiceAddition: isChoiceAddition,
+                     PropertyType: prop,
+-                    Operator: this.parseOperator(),
++                    ...(operator ? { Operator: operator } : {}),
+                     Comments: []
+                 }
+ 
+@@ -808,7 +811,7 @@ export default class Parser {
+     private parseOperator (): Operator {
+         const type = this.peekToken.Literal as OperatorType
+         if (this.curToken.Literal !== Tokens.DOT || !OPERATORS.includes(this.peekToken.Literal as OperatorType)) {
+-            throw new Error(`Operator ".${type}", expects a ${OPERATORS_EXPECTING_VALUES[type]!.join(' or ')} property, but found ${this.peekToken.Literal}!`)
++            throw new Error(`Operator ".${type}", expects a ${(OPERATORS_EXPECTING_VALUES[type] ?? ['unknown']).join(' or ')} property, but found ${this.peekToken.Literal}!`)
+         }
+ 
+         this.nextToken() // eat "."
