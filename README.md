@@ -6,23 +6,27 @@ CDDL support for TypeScript and JavaScript.
 
 ## What it will do
 
-[CDDL](https://datatracker.ietf.org/doc/html/rfc8610) (RFC 8610) is the IETF standard for describing CBOR and JSON data structures. Rust has real tooling for it. JavaScript and TypeScript, as far as we have found, currently do not.
+[CDDL](https://datatracker.ietf.org/doc/html/rfc8610) (RFC 8610) is the IETF standard for describing CBOR and JSON data structures. Rust has real tooling for it. JavaScript and TypeScript have a parser ([`cddl`](https://www.npmjs.com/package/cddl)) and a TypeScript-interface generator ([`cddl2ts`](https://www.npmjs.com/package/cddl2ts), used in production by WebdriverIO) — but nothing that generates runtime validation.
 
-This project will take a CDDL schema and generate [Zod](https://zod.dev) schemas from it, so a TypeScript consumer gets both the inferred type and the runtime validator from one generation step. That replaces a bare `interface` with no matching validator, which drifts the moment either side changes without the other.
+This project takes a CDDL schema and generates [Zod](https://zod.dev) schemas from it, so a TypeScript consumer gets both the inferred type and the runtime validator from one generation step. That replaces a bare `interface` with no matching validator, which drifts the moment either side changes without the other.
 
 ## Why this exists
 
-This project exists to serve [wire-mesh](https://github.com/ExaDev/wire-mesh)'s own need for a TypeScript implementation of a CDDL-described wire protocol — specifically, generating the schemas `ts/packages/core` in that repository is built against, from `spec/protocol.cddl` — but it is scoped and named to stand on its own. CDDL-to-TypeScript code generation appears to be genuinely unaddressed territory today, not a crowded space with an obvious existing choice.
+This project exists to serve [wire-mesh](https://github.com/ExaDev/wire-mesh)'s own need for a TypeScript implementation of a CDDL-described wire protocol — specifically, generating the schemas `ts/packages/core` in that repository is built against, from `spec/protocol.cddl` — but it is scoped and named to stand on its own. TypeScript codegen for CDDL is not unaddressed territory (cddl2ts addresses it); runtime-validation codegen is.
 
-## Planned approach
+## Chosen approach
 
-- **Reuse the Rust [`cddl`](https://github.com/anweiss/cddl) crate's parser rather than writing a new one.** Parsing CDDL's grammar correctly (generics, control operators, extension sockets) is the hard, easy-to-get-subtly-wrong part of a tool like this, and an actively maintained implementation already exists. The plan is to compile that crate, or a thin AST-exposing wrapper around it, to `wasm32-unknown-unknown`, and drive a TypeScript-side code emitter off its already-correct parse tree, rather than reimplementing parsing from scratch. Whether the crate's AST types are cleanly serialisable across the WASM boundary, for example via `serde`, is a concrete question to verify before committing further to this approach. It is not yet confirmed.
+Recorded in full, with the evaluation evidence behind it, in [docs/0001-foundation.md](docs/0001-foundation.md). In brief:
+
+- **Build on the pure-JS `cddl` parser's AST**, extended to implement the `.cbor` control operator it currently lacks (it crashes rather than parsing `bstr .cbor t` — a gap that matters because nested byte strings are how COSE envelopes wrap their payloads). The extension is attempted upstream first; a vendored fork is the fallback.
+- **Write a new Zod emitter** over that AST. cddl2ts's emitter demonstrates the AST's shapes but drops things a wire codec cannot afford: integer map keys become string-keyed fields, heterogeneous fixed arrays collapse to homogeneous ones, `.size` constraints vanish, and open map tails become `any`.
 - **Support a deliberately scoped subset of CDDL, not full RFC 8610 compliance.** Document that subset explicitly, and error clearly and loudly on anything outside it rather than silently mishandling it.
-- **Emit Zod schemas as the generation target**, not bare TypeScript interfaces or types.
 
 ## Prior art considered
 
-[BARE](https://datatracker.ietf.org/doc/draft-devault-bare/) already has a working TypeScript code generator, [`bare-ts/bare`](https://github.com/bare-ts/bare), closing the exact gap this project targets, but for a different, and currently still-draft (not yet a finalised RFC), wire format. If wire-mesh had chosen BARE over CBOR/CDDL, this project would likely not need to exist.
+- [`cddl2ts`](https://www.npmjs.com/package/cddl2ts) — TypeScript interfaces from CDDL, actively maintained, production-used. Evaluated directly against wire-mesh's schema (see the decision record); its AST walk is a useful reference, its output target (bare interfaces) and its information loss (integer keys, array heterogeneity, size constraints) are what cddl.js exists to fix.
+- The Rust [`cddl`](https://github.com/anweiss/cddl) crate compiled to WASM — the original plan for this repository, retired in favour of the pure-JS foundation; the reasoning is in the decision record.
+- [BARE](https://datatracker.ietf.org/doc/draft-devault-bare/) already has a working TypeScript code generator, [`bare-ts/bare`](https://github.com/bare-ts/bare), closing the exact gap this project targets, but for a different, and currently still-draft (not yet a finalised RFC), wire format. If wire-mesh had chosen BARE over CBOR/CDDL, this project would likely not need to exist.
 
 ## Contributing
 
