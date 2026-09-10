@@ -34,6 +34,13 @@ jobs:
       - name: Build the library (dual ESM/CJS, verified with attw)
         run: pnpm run build
 
+      - name: Confirm the committed dist/ matches a fresh build
+        run: |
+          if ! git diff --exit-code -- dist; then
+            echo "::error::dist/ is out of date. Run 'pnpm run build' and commit the result -- dist/ is committed deliberately (see README.md) and must never be edited by hand or left stale."
+            exit 1
+          fi
+
       - name: Typecheck
         run: pnpm run typecheck
 
