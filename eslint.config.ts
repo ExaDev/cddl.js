@@ -12,6 +12,8 @@ export default exadevConfig(
       ".turbo",
       "vendor",
       "test/fixtures/generated",
+      // Plain JS (not TS), specifically so it never needs Node's native type-stripping to load -- see tsdown.config.js's own comment for why. Nothing here needs type-aware linting.
+      "tsdown.config.js",
     ],
   },
   {
