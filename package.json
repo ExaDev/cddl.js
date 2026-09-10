@@ -2,6 +2,10 @@
   "name": "cddl.js",
   "version": "0.0.0",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ExaDev/cddl.js"
+  },
   "packageManager": "pnpm@10.33.0",
   "publishConfig": {
     "provenance": true,
