@@ -3,5 +3,5 @@ node_modules/
 .eslintcache
 coverage/
 test/fixtures/generated/protocol.ts
-# Not dist/ -- it's committed deliberately (see README.md's "Why dist/ is committed" section), so an npm/pnpm git-dependency install gets working code with no build step, which would otherwise need to run tsdown from inside node_modules, where Node's native TS-stripping refuses to load a .ts config at all.
+dist/
 vendor/cddl/dist/

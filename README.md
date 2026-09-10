@@ -28,9 +28,9 @@ Recorded in full, with the evaluation evidence behind it, in [docs/0001-foundati
 - The Rust [`cddl`](https://github.com/anweiss/cddl) crate compiled to WASM — the original plan for this repository, retired in favour of the pure-JS foundation; the reasoning is in the decision record.
 - [BARE](https://datatracker.ietf.org/doc/draft-devault-bare/) already has a working TypeScript code generator, [`bare-ts/bare`](https://github.com/bare-ts/bare), closing the exact gap this project targets, but for a different, and currently still-draft (not yet a finalised RFC), wire format. If wire-mesh had chosen BARE over CBOR/CDDL, this project would likely not need to exist.
 
-## Why dist/ is committed
+## Installing
 
-Consumers install this package as a git dependency (it isn't published to npm), and pnpm/npm run a git dependency's own build only from inside a `node_modules/` checkout -- exactly the one path Node's native TypeScript-stripping refuses to run, since it deliberately won't process a `.ts` file whose resolved path is under `node_modules`. Committing `dist/` means a git-dependency install never needs to build anything at all: it gets already-built output straight from the checkout, so that restriction never comes up, and the build config can stay a real `.ts` file for everyone actually working on this repo. CI rebuilds from source on every push and fails if the result doesn't match what's committed, so `dist/` can't silently drift from `src/`.
+Published to npm as [`cddl.js`](https://www.npmjs.com/package/cddl.js). `dist/` is built and published by CI on every release; it is not committed to source control.
 
 ## Contributing
 
