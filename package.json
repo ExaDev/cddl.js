@@ -8,7 +8,6 @@
     "dist"
   ],
   "scripts": {
-    "prepare": "pnpm run build",
     "build": "turbo run _build",
     "_build": "tsdown",
     "vendor:build": "turbo run _vendor:build",
