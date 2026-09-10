@@ -9,7 +9,7 @@
     },
     "_build": {
       "dependsOn": ["_vendor:build"],
-      "inputs": ["src/emitter.ts", "src/runtime.ts", "src/parse.ts", "tsdown.config.js", "tsconfig.json"],
+      "inputs": ["src/emitter.ts", "src/runtime.ts", "src/parse.ts", "tsdown.config.ts", "tsconfig.json"],
       "outputs": ["dist/**"]
     },
     "_generate": {
