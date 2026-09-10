@@ -1,0 +1,32 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+
+  // Every task name is the underscore-prefixed one the package.json script actually runs, matching wire-mesh's conformance/ convention: a task literally named "build" would make `pnpm run build`'s own `turbo run build` call resolve straight back to itself.
+  "tasks": {
+    "_vendor:build": {
+      "inputs": ["vendor/cddl/src/**", "vendor/cddl/tsconfig.json"],
+      "outputs": ["vendor/cddl/dist/**"]
+    },
+    "_build": {
+      "inputs": ["src/index.ts", "src/emitter.ts", "src/runtime.ts", "tsdown.config.ts", "tsconfig.json"],
+      "outputs": ["dist/**"]
+    },
+    "_generate": {
+      "dependsOn": ["_build", "_vendor:build"],
+      "inputs": ["src/cli.ts"],
+      "outputs": []
+    },
+    "_test": {
+      "dependsOn": ["_build", "_vendor:build"]
+    },
+    "_typecheck": {
+      "dependsOn": ["_build", "_vendor:build"],
+      "inputs": ["**/*.ts", "tsconfig.json", "tsconfig.node.json"]
+    },
+    "_lint": {
+      "dependsOn": ["_build"],
+      "inputs": ["$TURBO_DEFAULT$", "eslint.config.ts"],
+      "outputs": [".eslintcache"]
+    }
+  }
+}
