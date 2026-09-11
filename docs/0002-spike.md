@@ -36,7 +36,12 @@ All 427 upstream tests across the monorepo's 41 test files still pass. The only 
 
 An earlier full-spec parse appeared to hang; investigation showed the concatenated test file had grown to 32 GB — the concatenation shell loop's `*.cddl` glob had matched the output file itself, so `cat` appended the file to itself forever. The parser was never hanging. Any future "parser hangs on big input" claim from this spike should be read in that light: it doesn't.
 
+## A fourth upstream bug, found generating wire-mesh's `core/room` domain
+
+`readString()` in the lexer sliced a text-string literal's raw source between its two quotes with no escape processing at all — a backslash written to escape a quote, or itself, stayed in the token's `Literal` unchanged rather than being consumed. Per RFC 8610's SESC production, `\X` inside a CDDL text string means "the literal character X", not "a literal backslash followed by X". A `.regexp` rule whose pattern needs an escaped backslash (`\\.`, `\\+`) therefore parsed with an extra literal backslash still attached, which cddl.js's emitter then re-embedded into a generated `new RegExp(...)` call, double-escaping it and silently changing what the pattern matches — confirmed directly with `namespacedDomainIdSchema` (already shipped, already affected) and the new `dm-room-path` rule (`[0-9a-f]{64}\\+[0-9a-f]{64}`), both fixed by the same one-line change to `readString()`: consume the backslash and append only the escaped character, instead of copying both through unchanged. Fixed at `docs/0002-spike.md`'s own source of truth — the vendored fork — with matching lexer and end-to-end round-trip test coverage; tracked upstream at [webdriverio/cddl#91](https://github.com/webdriverio/cddl/issues/91) / [#92](https://github.com/webdriverio/cddl/pull/92).
+
 ## Consequences
 
 - Task order for the build (see the repository README's chosen approach) stands: upstream PR with the patch plus tests for the new operators first; vendored fork as fallback; wire-mesh spec promotes its `.cbor` relationships as each position becomes supported.
 - The array-member operator bug goes into the upstream PR too (or a sibling PR), since `[ bstr .size 3, bstr ]` crashing is a plain upstream defect independent of `.cbor`.
+- The string-literal escape bug above follows the same pattern: reported and fixed upstream first, vendored into this fork in the meantime, since it blocks every existing and future `.regexp` rule whose pattern needs an escaped backslash from validating correctly at runtime.
