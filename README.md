@@ -2,6 +2,8 @@
 
 CDDL support for TypeScript and JavaScript.
 
+[![npm downloads chart, log scale](https://shieldcn.dev/chart/npm/cddl.js.svg?bg=transparent&logo=false&yScale=log)](https://www.npmjs.com/package/cddl.js)
+
 > Status: **planning phase**. Nothing here is implemented yet. This repository records the intended approach ahead of a first release.
 
 ## What it will do
