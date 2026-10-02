@@ -1,5 +1,7 @@
 # cddl.js
 
+[![GitHub](https://img.shields.io/badge/GitHub-181717?logo=github&logoColor=white)](https://github.com/ExaDev/cddl.js) [![npm](https://img.shields.io/badge/npm-CB3837?logo=npm&logoColor=white)](https://www.npmjs.com/package/cddl.js) [![Release](https://img.shields.io/github/v/release/ExaDev/cddl.js)](https://github.com/ExaDev/cddl.js/releases/latest) [![CI](https://img.shields.io/github/actions/workflow/status/ExaDev/cddl.js/ci.yml?branch=main)](https://github.com/ExaDev/cddl.js/actions)
+
 CDDL support for TypeScript and JavaScript.
 
 [![npm downloads chart, log scale](https://shieldcn.dev/chart/npm/cddl.js.svg?bg=transparent&logo=false&yScale=log)](https://www.npmjs.com/package/cddl.js)
