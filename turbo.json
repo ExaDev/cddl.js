@@ -1,4 +1,5 @@
 {
+  "agentGuidance": false,
   "$schema": "https://turborepo.com/schema.json",
 
   // Every task name is the underscore-prefixed one the package.json script actually runs, matching wire-mesh's conformance/ convention: a task literally named "build" would make `pnpm run build`'s own `turbo run build` call resolve straight back to itself.
