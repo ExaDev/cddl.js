@@ -19,6 +19,7 @@ interface VectorFile {
 function isVectorFile(value: unknown): value is VectorFile {
   if (typeof value !== "object" || value === null) return false;
   if (!("vectors" in value) || !Array.isArray(value.vectors)) return false;
+
   return value.vectors.every(
     (v: unknown) =>
       typeof v === "object" &&
@@ -36,6 +37,7 @@ function readVectors(filename: string): Vector[] {
   if (!isVectorFile(raw)) {
     throw new Error(`${filename} is not a valid vector file`);
   }
+
   return raw.vectors;
 }
 
@@ -50,6 +52,7 @@ interface GeneratedSchemas {
 
 function isGeneratedSchemas(value: unknown): value is GeneratedSchemas {
   if (typeof value !== "object" || value === null) return false;
+
   return "frameSchema" in value && "capabilityTokenSchema" in value;
 }
 

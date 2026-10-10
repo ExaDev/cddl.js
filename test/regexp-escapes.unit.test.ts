@@ -13,6 +13,7 @@ function parseAndEmit(cddlSource: string): string {
   const path = join(dir, "spec.cddl");
   writeFileSync(path, cddlSource);
   const parsed = parse(path);
+
   return emitModule(parsed);
 }
 
@@ -34,7 +35,8 @@ describe("a CDDL .regexp literal's escaped backslash survives to the emitted Reg
     const schema = imported.dmRoomPathSchema as {
       safeParse: (value: unknown) => { success: boolean };
     };
-    const deviceIdHexLength = 64; // matches the {64} quantifier in the pattern under test
+    // Matches the {64} quantifier in the pattern under test.
+    const deviceIdHexLength = 64;
     const a = "a".repeat(deviceIdHexLength);
     const b = "b".repeat(deviceIdHexLength);
     expect(schema.safeParse(`${a}+${b}`).success).toBe(true);
