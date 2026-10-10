@@ -1,8 +1,14 @@
 {
-  "extends": "./tsconfig.json",
   "compilerOptions": {
     "allowImportingTsExtensions": true
   },
-  "include": ["src/cli.ts", "tsdown.config.ts", "eslint.config.ts", "release.config.ts", "test/**/*.ts"],
-  "exclude": ["test/fixtures/generated/protocol.ts"]
+  "exclude": ["test/fixtures/generated/protocol.ts"],
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/cli.ts",
+    "tsdown.config.ts",
+    "eslint.config.ts",
+    "release.config.ts",
+    "test/**/*.ts"
+  ]
 }
