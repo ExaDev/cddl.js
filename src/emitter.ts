@@ -95,11 +95,13 @@ export function mergeRules(parsed: unknown): MergedRule[] {
 
 function schemaVarName(ruleName: string): string {
   const clean = ruleName.startsWith("$") ? ruleName.slice(1) : ruleName;
+
   return `${camelCase(clean)}Schema`;
 }
 
 function typeName(ruleName: string): string {
   const clean = ruleName.startsWith("$") ? ruleName.slice(1) : ruleName;
+
   return camelCase(clean, { pascalCase: true });
 }
 
@@ -114,6 +116,7 @@ function requireStringField(
       `rule "${ruleName}" is missing the expected "${key}" string field`,
     );
   }
+
   return value;
 }
 
@@ -128,6 +131,7 @@ function requireObjectField(
       `rule "${ruleName}" is missing the expected "${key}" field`,
     );
   }
+
   return value;
 }
 
@@ -209,11 +213,13 @@ function emitWithOperator(
       );
     }
     const size = opValue.Value;
+
     return `${baseExpr}.refine((v) => v.length === ${String(size)}, { message: "expected exactly ${String(size)} bytes" })`;
   }
 
   if (operatorType === "regexp") {
     const pattern = emitOperatorValue(operator, ruleName);
+
     return `${baseExpr}.regex(new RegExp(${pattern}))`;
   }
 
@@ -230,6 +236,7 @@ function emitWithOperator(
     }
     refs.add(opValue.Value);
     const innerVar = schemaVarName(opValue.Value);
+
     return `cborDecodesAs(z.lazy(() => ${innerVar}))`;
   }
 
@@ -284,6 +291,7 @@ function buildLiteralKeyMap(rules: readonly MergedRule[]): LiteralKeyMap {
       map.set(rule.name, only.Value);
     }
   }
+
   return map;
 }
 
@@ -309,6 +317,7 @@ function emitSingleType(
   }
   if (node.Type === "group" && typeof node.Value === "string") {
     refs.add(node.Value);
+
     return `z.lazy(() => ${schemaVarName(node.Value)})`;
   }
   if (node.Type === "group" && "Properties" in node) {
@@ -339,6 +348,7 @@ function emitPropertyType(
   if (types.length === 1) {
     return emitSingleType(types[0], ruleName, literalKeys, refs);
   }
+
   return `z.union([${types.map((t) => emitSingleType(t, ruleName, literalKeys, refs)).join(", ")}])`;
 }
 
@@ -419,6 +429,7 @@ function emitGroupExpr(
     refs,
   );
   const object = `z.object({\n${fields.join("\n")}\n})`;
+
   return catchall !== undefined ? `${object}.catchall(${catchall})` : object;
 }
 
@@ -445,6 +456,7 @@ function emitArrayExpr(
         occurrence.m === Infinity
       ) {
         const inner = emitPropertyType(only.Type, ruleName, literalKeys, refs);
+
         return `z.array(${inner})`;
       }
     }
@@ -461,8 +473,10 @@ function emitArrayExpr(
         `rule "${ruleName}" mixes occurrence indicators within a fixed array, outside cddl.js's supported subset`,
       );
     }
+
     return emitPropertyType(value.Type, ruleName, literalKeys, refs);
   });
+
   return `z.tuple([${elements.join(", ")}])`;
 }
 
@@ -504,6 +518,7 @@ function computeRuleExpr(
   );
   const expr =
     rule.raw.length === 1 ? exprs.join("") : `z.union([${exprs.join(", ")}])`;
+
   return { expr, refs };
 }
 
@@ -529,6 +544,7 @@ function computeCyclicRules(
       }
     }
   }
+
   return cyclic;
 }
 
