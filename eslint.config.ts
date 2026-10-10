@@ -1,9 +1,10 @@
 import { exadevConfig } from "@exadev/eslint-config";
+import { defineConfig } from "eslint/config";
 import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended";
 import globals from "globals";
 
-export default exadevConfig(
-  {},
+export default defineConfig(
+  ...exadevConfig(),
   {
     ignores: [
       "dist",
@@ -24,6 +25,7 @@ export default exadevConfig(
     },
   },
   {
+    files: ["**/*.{ts,tsx,mts,cts}"],
     rules: {
       "@typescript-eslint/consistent-type-imports": [
         "error",
@@ -31,5 +33,8 @@ export default exadevConfig(
       ],
     },
   },
-  eslintPluginPrettierRecommended,
+  {
+    ...eslintPluginPrettierRecommended,
+    files: ["**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}"],
+  },
 );
