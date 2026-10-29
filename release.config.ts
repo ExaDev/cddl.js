@@ -24,6 +24,7 @@ const config: GlobalConfig = {
         ],
       },
     ],
+    // conventional-changelog-conventionalcommits is a direct dependency pinned to 9.x: release-notes-generator loads conventional-changelog-writer 8, and the 10.x preset needs writer 9, so it renders a bare version header instead of notes. presetConfig.types lists every type commit-analyzer's releaseRules accepts, so a release is never cut by a commit its own notes omit.
     [
       "@semantic-release/release-notes-generator",
       {
@@ -40,6 +41,7 @@ const config: GlobalConfig = {
             { type: "build", section: "Build" },
             { type: "ci", section: "CI" },
             { type: "chore", section: "Chores" },
+            { type: "revert", section: "Reverts" },
           ],
         },
       },
