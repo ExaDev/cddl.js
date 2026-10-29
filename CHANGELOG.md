@@ -1,3 +1,17 @@
+## [1.0.7](https://github.com/ExaDev/cddl.js/compare/v1.0.6...v1.0.7) (2026-10-29)
+
+### Bug Fixes
+
+* list every commit type in the release notes ([87eb9b1](https://github.com/ExaDev/cddl.js/commit/87eb9b1fbf366da279863f6757a70d4c382e01ad))
+
+### Refactoring
+
+* derive release rules and notes sections from one list of commit types ([6480cc9](https://github.com/ExaDev/cddl.js/commit/6480cc960321e94250ac5b909fc63c3d785729df))
+
+### Documentation
+
+* list the commits behind each release that had an empty changelog entry ([8082f7e](https://github.com/ExaDev/cddl.js/commit/8082f7e571a6023188e0e3d6ee89e5169421cf12))
+
 ## [1.0.6](https://github.com/ExaDev/cddl.js/compare/v1.0.5...v1.0.6) (2026-10-10)
 
 ### Styles
