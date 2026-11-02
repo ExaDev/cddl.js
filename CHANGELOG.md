@@ -1,3 +1,9 @@
+## [1.0.8](https://github.com/ExaDev/cddl.js/compare/v1.0.7...v1.0.8) (2026-11-02)
+
+### Documentation
+
+* describe the implemented package in the README ([2113111](https://github.com/ExaDev/cddl.js/commit/2113111302e09708eb5daecae81b8942b863fd55))
+
 ## [1.0.7](https://github.com/ExaDev/cddl.js/compare/v1.0.6...v1.0.7) (2026-10-29)
 
 ### Bug Fixes
