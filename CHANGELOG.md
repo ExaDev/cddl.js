@@ -1,3 +1,17 @@
+## [1.0.9](https://github.com/ExaDev/cddl.js/compare/v1.0.8...v1.0.9) (2026-11-02)
+
+### Bug Fixes
+
+* bundle the ESM-only dependencies into the CommonJS build ([00515c1](https://github.com/ExaDev/cddl.js/commit/00515c10abc0e44bb9e85d7e60e03ce9a648c620))
+
+### Documentation
+
+* state that every subpath resolves under require ([325ee40](https://github.com/ExaDev/cddl.js/commit/325ee409f6e61c5471cc9677352d5a8a86ff2d1c))
+
+### Tests
+
+* load the built CommonJS entries through the exports map ([5c06f9f](https://github.com/ExaDev/cddl.js/commit/5c06f9f4c851fd19bc3f938f4086032d3feb420c))
+
 ## [1.0.8](https://github.com/ExaDev/cddl.js/compare/v1.0.7...v1.0.8) (2026-11-02)
 
 ### Documentation
