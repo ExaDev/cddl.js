@@ -72,7 +72,7 @@ console.log(personSchema.safeParse({ name: "Ada", age: -1, id: new Uint8Array(3)
 
 ## Entry points
 
-The package has no root export. Each module is imported by its own subpath.
+The package has no root export. Each module is imported by its own subpath, and each resolves under both `import` and `require`. The CommonJS build is self-contained and does not rely on `require()` of ES modules.
 
 | Subpath | Export | Purpose |
 | --- | --- | --- |
