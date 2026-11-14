@@ -1,3 +1,17 @@
+## [2.0.0](https://github.com/ExaDev/cddl.js/compare/v1.0.11...v2.0.0) (2026-11-14)
+
+### ⚠ BREAKING CHANGES
+
+* zod is no longer installed with cddl.js.
+Consumers that relied on cddl.js installing it must install zod themselves (package managers
+that do not install peer dependencies automatically leave it missing).
+Consumers on zod 3 must move to zod 4 (>=4.0.0 <5).
+The peer range excludes zod 5 and above until they are tested.
+
+### Bug Fixes
+
+* use the consumer's zod instead of a private copy ([8b0e124](https://github.com/ExaDev/cddl.js/commit/8b0e124f39d1e5a82d25344ac6882a51899599bd))
+
 ## [1.0.11](https://github.com/ExaDev/cddl.js/compare/v1.0.10...v1.0.11) (2026-11-14)
 
 ### Bug Fixes
