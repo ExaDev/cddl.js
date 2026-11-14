@@ -47,10 +47,45 @@ jobs:
       - name: Round-trip wire-mesh's conformance vectors through the generated schemas
         run: pnpm run test
 
+  zod-range:
+    name: Test against zod ${{ matrix.zod }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # "4" follows the newest 4.x on purpose, so a new zod release that breaks the supported range is caught before a release. When it goes red, narrow the peer range or fix the code; never pin this arm.
+        zod: ["4.0.0", "4"]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: package.json
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .tool-versions
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Install the zod version under test
+        run: pnpm add --save-dev --ignore-scripts zod@${{ matrix.zod }}
+
+      - name: Compile the vendored parser
+        run: pnpm run vendor:build
+
+      - name: Build the library
+        run: pnpm run build
+
+      - name: Test against the built entries
+        run: pnpm run test
+
   release:
     name: Release
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: [build-and-test]
+    needs: [build-and-test, zod-range]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

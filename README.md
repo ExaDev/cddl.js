@@ -16,7 +16,7 @@ It supports a deliberately scoped subset of CDDL, not all of RFC 8610. Anything 
 npm install cddl.js zod
 ```
 
-The package is [`cddl.js`](https://www.npmjs.com/package/cddl.js) on npm. Generated modules import `zod`, so the project that uses them needs it installed too.
+The package is [`cddl.js`](https://www.npmjs.com/package/cddl.js) on npm. `zod` is a peer dependency, supported at `>=4.0.0 <5` (zod 5 and above are excluded until tested): install it in the project that uses cddl.js, so that the generated modules and `cddl.js/runtime` build and run schemas with one copy. The suite runs against the lowest and the latest 4.x in CI. A package manager that does not install peer dependencies by itself leaves zod missing, which shows as a module-not-found error for `zod` on import.
 
 ## Usage
 
