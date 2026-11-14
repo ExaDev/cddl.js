@@ -103,7 +103,7 @@ Each named rule produces two exports: `<name>Schema` and `<Name>`, the camel-cas
 | Reference to another rule | `z.lazy(() => otherSchema)` |
 | `$name = x` with `$name /= y` additions | One schema that is the union of every definition |
 | `.size N` | The value's `length` must equal `N` exactly |
-| `.regexp "..."` | `.regex(new RegExp("..."))`, using the pattern as written with no anchors added |
+| `.regexp "..."` | `.regex(new RegExp("^(?:...)$", "u"))`: the pattern must match the whole string, as RFC 8610 section 3.8.3 requires. An operand that is not a valid pattern under the `u` flag throws at generation, naming the rule. The operand is JavaScript regular expression syntax, not XSD: `.` excludes every JavaScript line terminator (LF, CR, U+2028, U+2029) where XSD excludes only LF and CR, and XSD-only escapes (`\i`, `\c`, block names such as `\p{IsBasicLatin}`) and character class subtraction are not translated. Under the `u` flag some operands that are valid without it fail at generation: an identity escape outside a class (`\-`, `\_`), a lone `{`, and a class range with a shorthand end (`[\d-z]`) |
 | `.cbor rule`, `.cborseq rule` | `cborDecodesAs(...)`, described below |
 
 Anything else throws. That includes other native types such as `float`, occurrence indicators other than none, `?` and `*` (so `+` and `n*m` are rejected), more than one catch-all in a map, any occurrence indicator on a fixed array's members, other control operators, and a rule defined more than once without being a socket.

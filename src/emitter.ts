@@ -160,21 +160,11 @@ function emitOccurrence(
   );
 }
 
-function emitOperatorValue(
-  operator: Record<string, unknown>,
-  ruleName: string,
-): string {
-  const opValue = operator.Value;
-  if (isLiteralValueNode(opValue) && opValue.Type === "literal") {
-    return JSON.stringify(opValue.Value);
-  }
-  throw new Error(
-    `rule "${ruleName}" uses an unsupported operator value shape`,
-  );
-}
-
 /** Rule names a rule's own emitted expression references via `z.lazy(() => xSchema)` -- collected as emission walks the AST so emitModule can tell which rules are genuinely part of a reference cycle afterwards (see computeCyclicRules). */
 type RefSet = Set<string>;
+
+/** Flags of every emitted `.regexp` pattern. */
+const regexpFlags = "u";
 
 function emitWithOperator(
   node: Record<string, unknown>,
@@ -218,9 +208,29 @@ function emitWithOperator(
   }
 
   if (operatorType === "regexp") {
-    const pattern = emitOperatorValue(operator, ruleName);
+    const opValue = operator.Value;
+    if (
+      !isLiteralValueNode(opValue) ||
+      opValue.Type !== "literal" ||
+      typeof opValue.Value !== "string"
+    ) {
+      throw new Error(
+        `rule "${ruleName}" uses .regexp with a non-string value, outside cddl.js's supported subset`,
+      );
+    }
+    // The operand is compiled on its own with the emitted flags, so an invalid pattern, or one with unbalanced parentheses that would close the wrapping group early, fails at emission naming the rule instead of when the generated module loads.
+    try {
+      new RegExp(opValue.Value, regexpFlags);
+    } catch (cause) {
+      throw new Error(
+        `rule "${ruleName}" uses .regexp with an operand that is not a valid pattern: ${cause instanceof Error ? cause.message : String(cause)}`,
+        { cause },
+      );
+    }
+    // RFC 8610 section 3.8.3: the control matches only when the expression matches the whole string. The group keeps top-level alternation inside the anchors, and `$` without the `m` flag matches only at the very end, so a trailing line terminator is refused. The `u` flag makes `.` and classes work on code points and `\p{...}` a property escape.
+    const wholeString = JSON.stringify(`^(?:${opValue.Value})$`);
 
-    return `${baseExpr}.regex(new RegExp(${pattern}))`;
+    return `${baseExpr}.regex(new RegExp(${wholeString}, ${JSON.stringify(regexpFlags)}))`;
   }
 
   if (operatorType === "cbor" || operatorType === "cborseq") {
