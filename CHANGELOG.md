@@ -1,3 +1,9 @@
+## [1.0.11](https://github.com/ExaDev/cddl.js/compare/v1.0.10...v1.0.11) (2026-11-14)
+
+### Bug Fixes
+
+* match a .regexp control against the whole text string ([37f933a](https://github.com/ExaDev/cddl.js/commit/37f933a7d2c47fb11c2a986cbf24f619cf0f0437))
+
 ## [1.0.10](https://github.com/ExaDev/cddl.js/compare/v1.0.9...v1.0.10) (2026-11-02)
 
 ### Build
